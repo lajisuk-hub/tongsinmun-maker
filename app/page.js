@@ -431,7 +431,7 @@ function StartScreen({ onPick }) {
               <MoonSheet d={moon} />
             </div>
           </div>
-          <div className="start-name">디자인 1 · 달님과 별 🌙</div>
+          <div className="start-name">디자인 1 · 로고형 🌙</div>
           <button className="btn primary" type="button">이 디자인으로 시작</button>
         </div>
         <div className="start-card" onClick={() => onPick('ribbon')}>
@@ -440,7 +440,7 @@ function StartScreen({ onPick }) {
               <RibbonSheet d={ribbon} />
             </div>
           </div>
-          <div className="start-name">디자인 2 · 초록 리본 🎀</div>
+          <div className="start-name">디자인 2 · 달력형 📅</div>
           <button className="btn primary" type="button">이 디자인으로 시작</button>
         </div>
       </div>
@@ -536,7 +536,7 @@ export default function Home() {
       <header className="topbar">
         <h1>🏫 가정통신문 만들기</h1>
         <button className="btn" type="button" onClick={switchTemplate}>
-          🔄 디자인 바꾸기 ({isMoon ? '달님' : '초록 리본'} → {isMoon ? '초록 리본' : '달님'})
+          🔄 디자인 바꾸기 ({isMoon ? '로고형' : '달력형'} → {isMoon ? '달력형' : '로고형'})
         </button>
         <button className="btn" type="button" onClick={reset}>🗑️ 처음부터 다시</button>
         <button className="btn primary" type="button" onClick={() => window.print()}>🖨️ 인쇄 / PDF 저장</button>

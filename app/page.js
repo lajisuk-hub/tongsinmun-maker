@@ -25,7 +25,7 @@ function makeDefaults(template) {
     orgName: '○○어린이집',
     teacher: '○○○',
     phone: '02-123-4567',
-    homepage: 'www.○○○.kr',
+    homepage: '',
     address: '서울시 ○○구 ○○로 123',
     activities: [
       { img: null, title: '자연을 만나요', emoji: '🌿', desc: '바깥 놀이터에서 자연을 탐색하며\n개미와 풀꽃을 관찰했어요.\n작은 생명도 소중하다는 것을 배웠답니다.' },
@@ -156,9 +156,9 @@ function MoonSheet({ d }) {
         </div>
         <div className="m-info">
           <div className="m-info-name">🏫 {d.orgName}</div>
-          <div className="m-info-row">담당교사 : {d.teacher}</div>
-          <div className="m-info-row">전화번호 : {d.phone}</div>
-          <div className="m-info-row">홈페이지 : {d.homepage}</div>
+          {(d.teacher || '').trim() && <div className="m-info-row">담당교사 : {d.teacher}</div>}
+          {(d.phone || '').trim() && <div className="m-info-row">전화번호 : {d.phone}</div>}
+          {(d.homepage || '').trim() && <div className="m-info-row">홈페이지 : {d.homepage}</div>}
         </div>
       </div>
 
@@ -232,10 +232,10 @@ function RibbonSheet({ d }) {
         </div>
         <div className="r-info">
           <div className="r-info-name">🏠 {d.orgName}</div>
-          <div className="r-info-row">담당교사 : {d.teacher}</div>
-          <div className="r-info-row">전화번호 : {d.phone}</div>
-          <div className="r-info-row">홈페이지 : {d.homepage}</div>
-          <div className="r-info-row">주&nbsp;&nbsp;&nbsp;&nbsp;소 : {d.address}</div>
+          {(d.teacher || '').trim() && <div className="r-info-row">담당교사 : {d.teacher}</div>}
+          {(d.phone || '').trim() && <div className="r-info-row">전화번호 : {d.phone}</div>}
+          {(d.homepage || '').trim() && <div className="r-info-row">홈페이지 : {d.homepage}</div>}
+          {(d.address || '').trim() && <div className="r-info-row">주&nbsp;&nbsp;&nbsp;&nbsp;소 : {d.address}</div>}
         </div>
       </div>
 
@@ -449,6 +449,28 @@ export default function Home() {
     }
   }, [d, phase]);
 
+  // 인쇄할 때 내용이 A4 한 장(약 1122px)보다 길면 자동으로 줄여서 한 장에 맞춘다
+  useEffect(() => {
+    const FIT = 1112;
+    const before = () => {
+      const sheet = document.querySelector('.sheet');
+      if (!sheet) return;
+      sheet.style.zoom = '';
+      const h = sheet.offsetHeight;
+      if (h > FIT) sheet.style.zoom = String(FIT / h);
+    };
+    const after = () => {
+      const sheet = document.querySelector('.sheet');
+      if (sheet) sheet.style.zoom = '';
+    };
+    window.addEventListener('beforeprint', before);
+    window.addEventListener('afterprint', after);
+    return () => {
+      window.removeEventListener('beforeprint', before);
+      window.removeEventListener('afterprint', after);
+    };
+  }, []);
+
   const pick = (t) => {
     setD(makeDefaults(t));
     setPhase('edit');
@@ -527,11 +549,11 @@ export default function Home() {
                 <input value={d.phone} onChange={(e) => up('phone', e.target.value)} />
               </Field>
             </div>
-            <Field label="홈페이지">
+            <Field label="홈페이지" hint="비워두면 통신문에 이 줄이 아예 안 나와요">
               <input value={d.homepage} onChange={(e) => up('homepage', e.target.value)} />
             </Field>
             {!isMoon && (
-              <Field label="주소">
+              <Field label="주소" hint="비워두면 통신문에 이 줄이 아예 안 나와요">
                 <input value={d.address} onChange={(e) => up('address', e.target.value)} />
               </Field>
             )}

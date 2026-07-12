@@ -331,6 +331,16 @@ textarea.tall {
   margin-bottom: 12px;
 }
 
+.preview-warn {
+  background: #fdeeee;
+  border: 1px solid #e8a5a5;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #8a3a3a;
+  margin-bottom: 12px;
+}
+
 .scale-box {
   overflow: hidden;
 }
@@ -990,7 +1000,8 @@ textarea.tall {
 
   .topbar,
   .editor,
-  .preview-tip {
+  .preview-tip,
+  .preview-warn {
     display: none !important;
   }
 

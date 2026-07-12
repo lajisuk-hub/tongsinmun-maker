@@ -331,7 +331,7 @@ function Sheet({ d }) {
 
 /* ---------- 미리보기 크기 맞추기 ---------- */
 
-function ScaledSheet({ children }) {
+function ScaledSheet({ children, onHeight }) {
   const boxRef = useRef(null);
   const innerRef = useRef(null);
   const [scale, setScale] = useState(0.5);
@@ -340,7 +340,10 @@ function ScaledSheet({ children }) {
   useEffect(() => {
     const update = () => {
       if (boxRef.current) setScale(Math.min(1, boxRef.current.clientWidth / SHEET_W));
-      if (innerRef.current) setH(innerRef.current.offsetHeight);
+      if (innerRef.current) {
+        setH(innerRef.current.offsetHeight);
+        if (onHeight) onHeight(innerRef.current.offsetHeight);
+      }
     };
     update();
     const ro = new ResizeObserver(update);
@@ -453,6 +456,7 @@ function StartScreen({ onPick }) {
 export default function Home() {
   const [phase, setPhase] = useState('loading');
   const [d, setD] = useState(null);
+  const [sheetH, setSheetH] = useState(1123);
 
   useEffect(() => {
     let saved = null;
@@ -475,19 +479,29 @@ export default function Home() {
     }
   }, [d, phase]);
 
-  // 인쇄할 때 내용이 A4 한 장(약 1122px)보다 길면 자동으로 줄여서 한 장에 맞춘다
+  // 인쇄할 때 내용이 A4 한 장(약 1122px)보다 길면 자동으로 줄여서 한 장에 맞춘다.
+  // zoom 방식은 일부 크롬 버전에서 위쪽이 안 찍히는 버그가 있어 transform 방식을 쓴다.
   useEffect(() => {
     const FIT = 1112;
+    const STYLE_ID = 'print-fit-style';
     const before = () => {
       const sheet = document.querySelector('.sheet');
       if (!sheet) return;
-      sheet.style.zoom = '';
-      const h = sheet.offsetHeight;
-      if (h > FIT) sheet.style.zoom = String(FIT / h);
+      const old = document.getElementById(STYLE_ID);
+      if (old) old.remove();
+      const s = Math.min(1, FIT / sheet.offsetHeight);
+      const st = document.createElement('style');
+      st.id = STYLE_ID;
+      st.textContent =
+        '@media print { ' +
+        '.scale-box { height: 296mm !important; overflow: hidden !important; } ' +
+        `.scale-inner { transform: scale(${s}) !important; transform-origin: top center !important; width: 794px !important; margin: 0 auto !important; } ` +
+        '}';
+      document.head.appendChild(st);
     };
     const after = () => {
-      const sheet = document.querySelector('.sheet');
-      if (sheet) sheet.style.zoom = '';
+      const old = document.getElementById(STYLE_ID);
+      if (old) old.remove();
     };
     window.addEventListener('beforeprint', before);
     window.addEventListener('afterprint', after);
@@ -739,7 +753,14 @@ export default function Home() {
             👀 아래는 완성 모습 미리보기예요. 왼쪽에 글을 쓰면 바로 바뀌어요.
             다 되면 위의 <b>🖨️ 인쇄 / PDF 저장</b> 버튼을 눌러주세요.
           </p>
-          <ScaledSheet>
+          {sheetH > 1135 && (
+            <p className="preview-warn">
+              ⚠️ 지금 내용이 A4 한 장보다 길어요. 인쇄하면 전체가 자동으로{' '}
+              <b>{Math.round((1112 / sheetH) * 100)}% 크기</b>로 줄어 한 장에 담겨요.
+              글자가 너무 작아 보이면 내용을 조금 줄여주세요.
+            </p>
+          )}
+          <ScaledSheet onHeight={setSheetH}>
             <Sheet d={d} />
           </ScaledSheet>
         </div>

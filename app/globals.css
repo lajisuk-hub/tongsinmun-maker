@@ -433,6 +433,13 @@ textarea.tall {
   flex: none;
 }
 
+.m-logo {
+  width: 148px;
+  height: 120px;
+  flex: none;
+  object-fit: contain;
+}
+
 .m-titlebox {
   flex: 1;
   text-align: center;

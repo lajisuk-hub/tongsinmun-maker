@@ -23,6 +23,7 @@ function makeDefaults(template) {
     year: String(y),
     month: String(m),
     orgName: '○○어린이집',
+    logo: null,
     teacher: '○○○',
     phone: '02-123-4567',
     homepage: '',
@@ -103,6 +104,31 @@ function readPhoto(file, cb) {
   reader.readAsDataURL(file);
 }
 
+// 로고는 배경이 투명한 그림(PNG)일 수 있어서 투명함을 그대로 유지한다
+function readLogo(file, cb) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 600;
+      let w = img.width;
+      let h = img.height;
+      if (Math.max(w, h) > max) {
+        const r = max / Math.max(w, h);
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/png'));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 /* ---------- 그림 요소 ---------- */
 
 function MoonArt() {
@@ -147,7 +173,7 @@ function MoonSheet({ d }) {
       </div>
 
       <div className="m-header">
-        <MoonArt />
+        {d.logo ? <img className="m-logo" src={d.logo} alt="로고" /> : <MoonArt />}
         <div className="m-titlebox">
           <div className="m-topslogan">{d.topSlogan}</div>
           <h1 className="sheet-title">가정통신문</h1>
@@ -522,6 +548,32 @@ export default function Home() {
             <Field label="어린이집 이름">
               <input value={d.orgName} onChange={(e) => up('orgName', e.target.value)} />
             </Field>
+            {isMoon && (
+              <div className="field">
+                <span className="field-label">어린이집 로고 (달님 그림 자리)</span>
+                <div className="photo-btns">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="logo-upload"
+                    className="file-hidden"
+                    onChange={(e) => {
+                      const f = e.target.files && e.target.files[0];
+                      if (f) readLogo(f, (url) => up('logo', url));
+                      e.target.value = '';
+                    }}
+                  />
+                  <label htmlFor="logo-upload" className="btn small">🖼️ 로고 올리기</label>
+                  {d.logo && (
+                    <button className="btn small ghost" type="button" onClick={() => up('logo', null)}>
+                      로고 지우기 (달님으로)
+                    </button>
+                  )}
+                  {d.logo && <img className="thumb" src={d.logo} alt="" />}
+                </div>
+                <span className="hint">로고를 올리면 왼쪽 위 달님 그림 대신 로고가 나와요. 지우면 다시 달님이 나와요.</span>
+              </div>
+            )}
             <div className="row2">
               <Field label="날짜">
                 <input value={d.date} onChange={(e) => up('date', e.target.value)} />

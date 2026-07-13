@@ -18,6 +18,7 @@ function makeDefaults(template) {
   const m = now.getMonth() + 1;
   const common = {
     template,
+    docTitle: '가정통신문',
     date: todayKorean(),
     issueNo: `제 ${y}-00호`,
     year: String(y),
@@ -42,7 +43,7 @@ function makeDefaults(template) {
       { label: '기타 안내', text: '' },
       { label: '비고', text: '' },
     ],
-    footer: '아이들의 웃음이 가득한 ○○어린이집',
+    footer: '아이들의 웃음이 가득한',
   };
 
   if (template === 'moon') {
@@ -153,6 +154,11 @@ function MoonArt() {
   );
 }
 
+// 맨 아래 마무리 줄: 마무리 문구 뒤에 어린이집 이름이 자동으로 붙는다
+function footerText(d) {
+  return [(d.footer || '').trim(), (d.orgName || '').trim()].filter(Boolean).join(' ');
+}
+
 function Photo({ a }) {
   if (a.img) return <img src={a.img} alt={a.title} />;
   return (
@@ -176,7 +182,7 @@ function MoonSheet({ d }) {
         {d.logo ? <img className="m-logo" src={d.logo} alt="로고" /> : <MoonArt />}
         <div className="m-titlebox">
           <div className="m-topslogan">{d.topSlogan}</div>
-          <h1 className="sheet-title">가정통신문</h1>
+          <h1 className="sheet-title">{d.docTitle || '가정통신문'}</h1>
           <div className="m-dots" />
           <div className="m-bottomslogan">♥ {d.bottomSlogan} ♥</div>
         </div>
@@ -231,7 +237,7 @@ function MoonSheet({ d }) {
         <div className="m-write-moon">🌙</div>
       </div>
 
-      <div className="sheet-footer">♥ {d.footer} ♥</div>
+      <div className="sheet-footer">♥ {footerText(d)} ♥</div>
     </div>
   );
 }
@@ -252,7 +258,7 @@ function RibbonSheet({ d }) {
         </div>
         <div className="r-titlebox">
           <div className="r-topslogan">{d.topSlogan} 🌿</div>
-          <h1 className="sheet-title">가정통신문</h1>
+          <h1 className="sheet-title">{d.docTitle || '가정통신문'}</h1>
           <div className="r-underline" />
           <div className="r-bottomslogan">♥ {d.bottomSlogan} ♥</div>
         </div>
@@ -320,7 +326,7 @@ function RibbonSheet({ d }) {
       </div>
 
       <div className="r-footer-dash" />
-      <div className="sheet-footer">♥ {d.footer} ♥</div>
+      <div className="sheet-footer">♥ {footerText(d)} ♥</div>
     </div>
   );
 }
@@ -457,6 +463,7 @@ export default function Home() {
   const [phase, setPhase] = useState('loading');
   const [d, setD] = useState(null);
   const [sheetH, setSheetH] = useState(1123);
+  const [busyDown, setBusyDown] = useState(null); // 'pdf' | 'ppt' | null
 
   useEffect(() => {
     let saved = null;
@@ -464,6 +471,16 @@ export default function Home() {
       saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     } catch {}
     if (saved && saved.template) {
+      // 예전 버전에서 저장된 데이터 손질
+      if (!saved.docTitle) saved.docTitle = '가정통신문';
+      if (saved.footer) {
+        // 마무리 문구 뒤에 어린이집 이름이 자동으로 붙게 되면서,
+        // 문구 안에 이미 들어있던 어린이집 이름은 빼서 두 번 나오지 않게 한다
+        let f = saved.footer.replace(/○○어린이집/g, '').trim();
+        const org = (saved.orgName || '').trim();
+        if (org && f.endsWith(org)) f = f.slice(0, f.length - org.length).trim();
+        saved.footer = f;
+      }
       setD(saved);
       setPhase('edit');
     } else {
@@ -511,6 +528,76 @@ export default function Home() {
     };
   }, []);
 
+  // 미리보기 통신문을 고화질 그림으로 찍는다 (PDF/PPT 저장에 사용)
+  const captureSheet = async () => {
+    const html2canvas = (await import('html2canvas')).default;
+    const sheet = document.querySelector('.preview-col .sheet');
+    if (!sheet) throw new Error('sheet not found');
+    const w = sheet.offsetWidth;
+    const h = sheet.offsetHeight;
+    const canvas = await html2canvas(sheet, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      // 미리보기는 화면에 맞춰 축소되어 있으므로, 찍을 때는 원래 크기(100%)로 되돌린다
+      onclone: (doc) => {
+        const inner = doc.querySelector('.preview-col .scale-inner');
+        if (inner) inner.style.transform = 'none';
+        const box = doc.querySelector('.preview-col .scale-box');
+        if (box) {
+          box.style.height = 'auto';
+          box.style.overflow = 'visible';
+        }
+      },
+    });
+    // JPEG로 저장해서 파일 용량을 줄인다 (PNG는 10MB가 넘어 공유하기 무겁다)
+    return { dataUrl: canvas.toDataURL('image/jpeg', 0.9), w, h };
+  };
+
+  const fileName = () =>
+    ((d && d.docTitle) || '가정통신문').trim().replace(/[\\/:*?"<>|]/g, ' ') || '가정통신문';
+
+  // PDF: 페이지 크기를 내용 크기와 똑같이 맞춰서 빈 공간 없이 딱 한 장으로 만든다
+  const downloadPdf = async () => {
+    setBusyDown('pdf');
+    try {
+      const { dataUrl, w, h } = await captureSheet();
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({
+        orientation: h >= w ? 'portrait' : 'landscape',
+        unit: 'px',
+        format: [w, h],
+        hotfixes: ['px_scaling'],
+      });
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, w, h);
+      pdf.save(`${fileName()}.pdf`);
+    } catch {
+      alert('PDF 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+    setBusyDown(null);
+  };
+
+  // PPT: 슬라이드 크기를 통신문 크기에 맞추고 그림을 꽉 채운다
+  const downloadPpt = async () => {
+    setBusyDown('ppt');
+    try {
+      const { dataUrl, w, h } = await captureSheet();
+      const PptxGenJS = (await import('pptxgenjs')).default;
+      const pptx = new PptxGenJS();
+      const wIn = w / 96;
+      const hIn = h / 96;
+      pptx.defineLayout({ name: 'SHEET', width: wIn, height: hIn });
+      pptx.layout = 'SHEET';
+      const slide = pptx.addSlide();
+      slide.addImage({ data: dataUrl, x: 0, y: 0, w: wIn, h: hIn });
+      await pptx.writeFile({ fileName: `${fileName()}.pptx` });
+    } catch {
+      alert('PPT 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+    setBusyDown(null);
+  };
+
   const pick = (t) => {
     setD(makeDefaults(t));
     setPhase('edit');
@@ -553,12 +640,21 @@ export default function Home() {
           🔄 디자인 바꾸기 ({isMoon ? '로고형' : '달력형'} → {isMoon ? '달력형' : '로고형'})
         </button>
         <button className="btn" type="button" onClick={reset}>🗑️ 처음부터 다시</button>
-        <button className="btn primary" type="button" onClick={() => window.print()}>🖨️ 인쇄 / PDF 저장</button>
+        <button className="btn" type="button" disabled={!!busyDown} onClick={downloadPdf}>
+          {busyDown === 'pdf' ? '📄 만드는 중…' : '📄 PDF로 저장'}
+        </button>
+        <button className="btn" type="button" disabled={!!busyDown} onClick={downloadPpt}>
+          {busyDown === 'ppt' ? '📊 만드는 중…' : '📊 PPT로 저장'}
+        </button>
+        <button className="btn primary" type="button" onClick={() => window.print()}>🖨️ 인쇄</button>
       </header>
 
       <div className="main">
         <div className="editor">
           <Section title="1. 기본 정보">
+            <Field label="통신문 제목" hint="예: 가정통신문, 7월 소식지, 여름방학 안내">
+              <input value={d.docTitle} onChange={(e) => up('docTitle', e.target.value)} />
+            </Field>
             <Field label="어린이집 이름">
               <input value={d.orgName} onChange={(e) => up('orgName', e.target.value)} />
             </Field>
@@ -629,7 +725,7 @@ export default function Home() {
             <Field label="아래쪽 문구 (제목 아래 한 줄)">
               <input value={d.bottomSlogan} onChange={(e) => up('bottomSlogan', e.target.value)} />
             </Field>
-            <Field label="맨 아래 마무리 문구">
+            <Field label="맨 아래 마무리 문구" hint="문구 뒤에 어린이집 이름이 자동으로 붙어요">
               <input value={d.footer} onChange={(e) => up('footer', e.target.value)} />
             </Field>
           </Section>
@@ -751,7 +847,7 @@ export default function Home() {
         <div className="preview-col">
           <p className="preview-tip">
             👀 아래는 완성 모습 미리보기예요. 왼쪽에 글을 쓰면 바로 바뀌어요.
-            다 되면 위의 <b>🖨️ 인쇄 / PDF 저장</b> 버튼을 눌러주세요.
+            다 되면 위의 <b>📄 PDF로 저장</b>, <b>📊 PPT로 저장</b>, <b>🖨️ 인쇄</b> 버튼을 눌러주세요.
           </p>
           {sheetH > 1135 && (
             <p className="preview-warn">

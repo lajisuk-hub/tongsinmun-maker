@@ -424,6 +424,34 @@ function Section({ title, children }) {
   );
 }
 
+/* ---------- 꾸밈 그림 고르기 ---------- */
+
+const ACTIVITY_EMOJIS = ['🌿', '🌞', '🌈', '🌸', '🍀', '🎨', '✂️', '🖍️', '🎵', '🥁', '⚽', '💦', '🧩', '🧸', '🍉', '💗', '⭐', '🚌'];
+const NOTICE_EMOJIS = ['📣', '📅', '👕', '⏰', '🧼', '🩹', '🎂', '📌', '🚌', '💊', '📖', '✅', '🌂', '🥪', '💗', '⭐'];
+
+function EmojiField({ label, value, onChange, choices, hint }) {
+  // 예전에 직접 입력해 둔 그림이 목록에 없으면 그것도 함께 보여준다
+  const list = value && !choices.includes(value) ? [...choices, value] : choices;
+  return (
+    <div className="field">
+      <span className="field-label">{label}</span>
+      <div className="emoji-grid">
+        {list.map((e) => (
+          <button
+            key={e}
+            type="button"
+            className={`emoji-btn${value === e ? ' on' : ''}`}
+            onClick={() => onChange(value === e ? '' : e)}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+      <span className="hint">{hint || '마음에 드는 그림을 누르면 선택되고, 한 번 더 누르면 빠져요.'}</span>
+    </div>
+  );
+}
+
 /* ---------- 시작 화면 ---------- */
 
 function StartScreen({ onPick }) {
@@ -757,14 +785,15 @@ export default function Home() {
                   )}
                   {a.img && <img className="thumb" src={a.img} alt="" />}
                 </div>
-                <div className="row2">
-                  <Field label="활동 이름">
-                    <input value={a.title} onChange={(e) => upAct(i, 'title', e.target.value)} />
-                  </Field>
-                  <Field label="꾸밈 이모지">
-                    <input value={a.emoji} onChange={(e) => upAct(i, 'emoji', e.target.value)} />
-                  </Field>
-                </div>
+                <Field label="활동 이름">
+                  <input value={a.title} onChange={(e) => upAct(i, 'title', e.target.value)} />
+                </Field>
+                <EmojiField
+                  label="꾸밈 그림 (활동 이름 옆에 붙어요)"
+                  value={a.emoji}
+                  onChange={(v) => upAct(i, 'emoji', v)}
+                  choices={ACTIVITY_EMOJIS}
+                />
                 <Field label="활동 설명">
                   <textarea value={a.desc} onChange={(e) => upAct(i, 'desc', e.target.value)} />
                 </Field>
@@ -787,14 +816,16 @@ export default function Home() {
                   안내 {i + 1}
                   <button className="btn small ghost" type="button" onClick={() => rmNotice(i)}>삭제</button>
                 </div>
-                <div className="row2">
-                  <Field label="제목 (짧게)">
-                    <input value={n.label} onChange={(e) => upNotice(i, 'label', e.target.value)} />
-                  </Field>
-                  <Field label="아이콘" hint="초록 리본 디자인에서만 보여요">
-                    <input value={n.icon} onChange={(e) => upNotice(i, 'icon', e.target.value)} />
-                  </Field>
-                </div>
+                <Field label="제목 (짧게)">
+                  <input value={n.label} onChange={(e) => upNotice(i, 'label', e.target.value)} />
+                </Field>
+                <EmojiField
+                  label="아이콘 그림"
+                  value={n.icon}
+                  onChange={(v) => upNotice(i, 'icon', v)}
+                  choices={NOTICE_EMOJIS}
+                  hint="달력형 디자인에서만 보여요. 누르면 선택되고, 한 번 더 누르면 빠져요."
+                />
                 <Field label="내용">
                   <textarea value={n.text} onChange={(e) => upNotice(i, 'text', e.target.value)} />
                 </Field>

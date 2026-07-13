@@ -1041,3 +1041,32 @@ textarea.tall {
   size: A4;
   margin: 0;
 }
+
+/* ===== 꾸밈 그림 고르기 ===== */
+
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.emoji-btn {
+  font-size: 18px;
+  line-height: 1;
+  padding: 7px 9px;
+  border: 1.5px solid #cfc7ae;
+  border-radius: 10px;
+  background: #fffdf6;
+  cursor: pointer;
+}
+
+.emoji-btn:hover {
+  background: #f5f0dd;
+}
+
+.emoji-btn.on {
+  border-color: var(--green);
+  background: #eef4df;
+  box-shadow: 0 0 0 2px #dce8c2;
+}

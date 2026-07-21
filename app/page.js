@@ -25,6 +25,7 @@ function makeDefaults(template) {
     month: String(m),
     orgName: '○○어린이집',
     logo: null,
+    teacherLabel: '담당교사',
     teacher: '○○○',
     phone: '02-123-4567',
     homepage: '',
@@ -188,7 +189,7 @@ function MoonSheet({ d }) {
         </div>
         <div className="m-info">
           <div className="m-info-name">🏫 {d.orgName}</div>
-          {(d.teacher || '').trim() && <div className="m-info-row">담당교사 : {d.teacher}</div>}
+          {(d.teacher || '').trim() && <div className="m-info-row">{d.teacherLabel || '담당교사'} : {d.teacher}</div>}
           {(d.phone || '').trim() && <div className="m-info-row">전화번호 : {d.phone}</div>}
           {(d.homepage || '').trim() && <div className="m-info-row">홈페이지 : {d.homepage}</div>}
         </div>
@@ -264,7 +265,7 @@ function RibbonSheet({ d }) {
         </div>
         <div className="r-info">
           <div className="r-info-name">🏠 {d.orgName}</div>
-          {(d.teacher || '').trim() && <div className="r-info-row">담당교사 : {d.teacher}</div>}
+          {(d.teacher || '').trim() && <div className="r-info-row">{d.teacherLabel || '담당교사'} : {d.teacher}</div>}
           {(d.phone || '').trim() && <div className="r-info-row">전화번호 : {d.phone}</div>}
           {(d.homepage || '').trim() && <div className="r-info-row">홈페이지 : {d.homepage}</div>}
           {(d.address || '').trim() && <div className="r-info-row">주&nbsp;&nbsp;&nbsp;&nbsp;소 : {d.address}</div>}
@@ -501,6 +502,7 @@ export default function Home() {
     if (saved && saved.template) {
       // 예전 버전에서 저장된 데이터 손질
       if (!saved.docTitle) saved.docTitle = '가정통신문';
+      if (saved.teacherLabel === undefined) saved.teacherLabel = '담당교사';
       if (saved.footer) {
         // 마무리 문구 뒤에 어린이집 이름이 자동으로 붙게 되면서,
         // 문구 안에 이미 들어있던 어린이집 이름은 빼서 두 번 나오지 않게 한다
@@ -732,13 +734,16 @@ export default function Home() {
               )}
             </div>
             <div className="row2">
-              <Field label="담당교사">
+              <Field label="담당자 항목 이름" hint="담임교사·담당자·원감 등 원하는 대로 바꿔 쓰세요">
+                <input value={d.teacherLabel ?? '담당교사'} onChange={(e) => up('teacherLabel', e.target.value)} />
+              </Field>
+              <Field label="담당자 이름" hint="비워두면 통신문에 이 줄이 아예 안 나와요">
                 <input value={d.teacher} onChange={(e) => up('teacher', e.target.value)} />
               </Field>
-              <Field label="전화번호">
-                <input value={d.phone} onChange={(e) => up('phone', e.target.value)} />
-              </Field>
             </div>
+            <Field label="전화번호">
+              <input value={d.phone} onChange={(e) => up('phone', e.target.value)} />
+            </Field>
             <Field label="홈페이지" hint="비워두면 통신문에 이 줄이 아예 안 나와요">
               <input value={d.homepage} onChange={(e) => up('homepage', e.target.value)} />
             </Field>
